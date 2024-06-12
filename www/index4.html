@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ton Generator</title>
+</head>
+<body>
+    <button id="play">Ton abspielen</button>
+    <button id="playHigh">Ton (hoch) abspielen</button>
+    <button id="stop">Ton stoppen</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            let oscillator;
+            let oscillator2;
+
+            document.getElementById('play').addEventListener('click', function () {
+                oscillator = audioContext.createOscillator();
+                oscillator.type = 'sawtooth'; // Typ des Oszillators: 'sine', 'square', 'sawtooth', 'triangle'
+                oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // Frequenz in Hertz (440 Hz = A4)
+                oscillator.connect(audioContext.destination);
+                oscillator.start();
+            });
+
+            document.getElementById('stop').addEventListener('click', function () {
+                if (oscillator) {
+                    oscillator.stop();
+                    oscillator.disconnect();
+                }
+            });
+
+            document.getElementById('playHigh').addEventListener('click', function () {
+                oscillator2 = audioContext.createOscillator();
+                oscillator2.type = 'sine'; // Typ des Oszillators: 'sine', 'square', 'sawtooth', 'triangle'
+                oscillator2.frequency.setValueAtTime(600, audioContext.currentTime); // Frequenz in Hertz (440 Hz = A4)
+                oscillator2.connect(audioContext.destination);
+                oscillator2.start();
+            });
+
+            document.getElementById('stop').addEventListener('click', function () {
+                if (oscillator2) {
+                    oscillator2.stop();
+                    oscillator2.disconnect();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

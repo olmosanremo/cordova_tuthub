@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Oszillator mit Stifteingabe</title>
+</head>
+<body>
+    <button id="startButton">Start Tone</button>
+    <canvas id="canvas" style="border:1px solid #000000;"></canvas>
+    <script>
+        document.addEventListener('deviceready', function() {
+            // Initialisiere die Web Audio API
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            let oscillator = null;
+
+            const canvas = document.getElementById('canvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const ctx = canvas.getContext('2d');
+
+            // Funktion zur Steuerung der Tonhöhe basierend auf der Stifteingabe
+            const updateFrequency = (y) => {
+                if (oscillator) {
+                    const minFrequency = 100;
+                    const maxFrequency = 1000;
+                    const frequency = minFrequency + (maxFrequency - minFrequency) * (1 - y / canvas.height);
+                    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+                }
+            };
+
+            // Ereignislistener für die Stifteingabe
+            canvas.addEventListener('pointermove', (event) => {
+                const rect = canvas.getBoundingClientRect();
+                const y = event.clientY - rect.top;
+                updateFrequency(y);
+            });
+
+            // Optional: Visuelle Rückmeldung auf dem Canvas
+            canvas.addEventListener('pointermove', (event) => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.beginPath();
+                ctx.arc(event.clientX, event.clientY, 5, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+
+            // Button-Klick Ereignislistener
+            document.getElementById('startButton').addEventListener('click', () => {
+                if (!oscillator) {
+                    oscillator = audioContext.createOscillator();
+                    oscillator.type = 'sine'; // Typ des Oszillators
+                    oscillator.start();
+
+                    const gainNode = audioContext.createGain();
+                    gainNode.gain.value = 0.1; // Lautstärke
+
+                    oscillator.connect(gainNode).connect(audioContext.destination);
+                }
+            });
+        }, false);
+    </script>
+</body>
+</html>

@@ -1,51 +1,84 @@
 <!DOCTYPE html>
-<html lang="de">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ton Generator</title>
+    <title>Oszillator mit Touchscreen-Steuerung</title>
 </head>
 <body>
-    <button id="play">Ton abspielen</button>
-    <button id="playHigh">Ton (hoch) abspielen</button>
-    <button id="stop">Ton stoppen</button>
-
+    <button id="startButton">Start Tone</button>
+    <button id="stopButton">Stop Tone</button>
+    <canvas id="canvas" style="border:1px solid #000000;"></canvas>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialisiere die Web Audio API
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            let oscillator;
-            let oscillator2;
+            let oscillator = null;
+            let gainNode = null;
 
-            document.getElementById('play').addEventListener('click', function () {
-                oscillator = audioContext.createOscillator();
-                oscillator.type = 'sawtooth'; // Typ des Oszillators: 'sine', 'square', 'sawtooth', 'triangle'
-                oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // Frequenz in Hertz (440 Hz = A4)
-                oscillator.connect(audioContext.destination);
-                oscillator.start();
+            const canvas = document.getElementById('canvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const ctx = canvas.getContext('2d');
+
+            const lerp = (a, b, t) => a + (b - a) * t;
+
+            // Funktion zur Steuerung der Tonhöhe und Lautstärke basierend auf der Touch-Position
+            const updateSound = (volume, pitch) => {
+                if (oscillator && gainNode) {
+                    const minFrequency = 100;
+                    const maxFrequency = 1000;
+                    const frequency = lerp(minFrequency, maxFrequency, 1 - pitch);
+                    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+
+                    const minGain = 0.0;
+                    const maxGain = 1.0;
+                    const gain = lerp(minGain, maxGain, volume);
+                    gainNode.gain.setValueAtTime(gain, audioContext.currentTime);
+                }
+            };
+
+            // Ereignislistener für Touch-Eingaben
+            canvas.addEventListener('touchmove', event => {
+                event.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const touch = event.touches[0];
+
+                // make some noise!
+                const volume = (touch.clientX - rect.left) / canvas.width;
+                const pitch = (touch.clientY - rect.top) / canvas.height;
+                updateSound(volume, pitch);
+
+                // draw the touch position on screen
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.beginPath();
+                ctx.arc(touch.clientX, touch.clientY, 5, 0, 2 * Math.PI);
+                ctx.fill();
             });
 
-            document.getElementById('stop').addEventListener('click', function () {
+            // Button-Klick Ereignislistener zum Starten des Tons
+            document.getElementById('startButton').addEventListener('click', () => {
+                if (!oscillator) {
+                    oscillator = audioContext.createOscillator();
+                    oscillator.type = 'sine'; // Typ des Oszillators
+                    oscillator.start();
+
+                    gainNode = audioContext.createGain();
+                    gainNode.gain.value = 0.1; // Anfangslautstärke
+
+                    oscillator.connect(gainNode).connect(audioContext.destination);
+                }
+            });
+
+            // Button-Klick Ereignislistener zum Stoppen des Tons
+            document.getElementById('stopButton').addEventListener('click', () => {
                 if (oscillator) {
                     oscillator.stop();
                     oscillator.disconnect();
+                    oscillator = null;
+                    gainNode = null;
+                    ctx.clearRect(0, 0, canvas.width, canvas.height); // Canvas leeren
                 }
             });
-
-            document.getElementById('playHigh').addEventListener('click', function () {
-                oscillator2 = audioContext.createOscillator();
-                oscillator2.type = 'sine'; // Typ des Oszillators: 'sine', 'square', 'sawtooth', 'triangle'
-                oscillator2.frequency.setValueAtTime(600, audioContext.currentTime); // Frequenz in Hertz (440 Hz = A4)
-                oscillator2.connect(audioContext.destination);
-                oscillator2.start();
-            });
-
-            document.getElementById('stop').addEventListener('click', function () {
-                if (oscillator2) {
-                    oscillator2.stop();
-                    oscillator2.disconnect();
-                }
-            });
-        });
+        }, false);
     </script>
 </body>
 </html>
